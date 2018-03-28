@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "scripts": {},
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "dependencies": {
+    "parse-json": "^4.0.0",
+    "to-camel-case": "^1.0.0"
+  }
+}
