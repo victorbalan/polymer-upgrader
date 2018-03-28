@@ -11,6 +11,7 @@ let fileName = '';
 let writeFile = false;
 let useLebab = false;
 let useLebabUnsafe = false;
+let returnUnshpe = false;
 for (let i = 1; i < process.argv.length; i++) {
     let arg = process.argv[i];
     switch (arg) {
@@ -23,23 +24,46 @@ for (let i = 1; i < process.argv.length; i++) {
         case '-lu':
             useLebabUnsafe = true;
             break;
+        case '-11':
+            returnUnshpe = true;
+            break;
         default:
             fileName = arg;
     }
 }
-console.log('running convertor for ', fileName, ' with write file:', writeFile, 'use lebab: ', useLebab, 'use lebab unsafe: ', useLebabUnsafe);
+let polymerConfigs = configExtractor.extractJsonConfigFromPath(fileName);
+if(returnUnshpe) {
+    return 11;
+}
+for (let i = 0; i < polymerConfigs.length; i++) {
+    let polymerConfig = polymerConfigs[i];
+    console.log('running convertor for ', polymerConfig.path, ' with write file:', writeFile, 'use lebab: ', useLebab, 'use lebab unsafe: ', useLebabUnsafe);
+    let es6class = es6Converter.convertToES6(polymerConfig);
+    let safeLebab = ['arrow', 'for-of', 'for-each', 'arg-rest', 'arg-spread', 'obj-method', 'obj-shorthand', 'exponent', 'multi-var'];
+    if (useLebab) {
+        es6class = lebab.transform(es6class, safeLebab).code;
+    }
+    if (useLebabUnsafe) {
+        es6class = lebab.transform(es6class, safeLebab.concat(['let'])).code;
+    }
+    if (writeFile) {
+        configWriter.writeES6Class(polymerConfig.path, polymerConfig.start, polymerConfig.end, es6class);
+    } else {
+        log(polymerConfig.path);
+        console.log(es6class);
+        log(starify(polymerConfig.path));
+    }
+}
 
-let polymerConfig = configExtractor.extractJsonConfigFromFile(fileName);
-let es6class = es6Converter.convertToES6(polymerConfig);
-let safeLebab = ['arrow', 'for-of', 'for-each', 'arg-rest', 'arg-spread', 'obj-method', 'obj-shorthand', 'exponent', 'multi-var'];
-if(useLebab) {
-    es6class = lebab.transform(es6class, safeLebab).code;
+function log(msg) {
+    let stars = '********************************';
+    console.log(stars + msg + stars);
 }
-if(useLebabUnsafe) {
-    es6class = lebab.transform(es6class, safeLebab.concat(['let'])).code;
-}
-if (writeFile) {
-    configWriter.writeES6Class(fileName, polymerConfig.start, polymerConfig.end, es6class);
-} else {
-    console.log(es6class);
+
+function starify(msg) {
+    let str = '';
+    for (let i = 0; i < msg.length; i++) {
+        str = str + '*';
+    }
+    return str;
 }

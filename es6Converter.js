@@ -6,14 +6,34 @@ exports.convertToES6 = function (data) {
 
     let es6 = getClassDefinition(className, data);
     es6 = es6 + getStaticMethodWithReturn('is', '\'' + config.is + '\'');
-    es6 = es6 + getStaticMethodWithReturn('properties', config.properties);
+    es6 = es6 + getStaticMethodWithReturn('properties', decodeURI(config.properties));
     es6 = es6 + getStaticMethodWithReturn('observers', config.observers);
+    let listenersBlock = '';
+    if (config.listeners) {
+        for (let key in config.listeners) {
+            if (!config.listeners.hasOwnProperty(key)) {
+                continue;
+            }
+            listenersBlock = listenersBlock + 'this.addEventListener(\'' + key + '\', (e) => this.' + config.listeners[key] + '(e, e.detail));\n';
+        }
+    }
+    let hasReady = false;
     for (let key in config) {
         if (!config.hasOwnProperty(key) || typeof config[key] !== 'function') {
             continue;
         }
         let fct = convertFunction(config[key].toString());
-        es6 = es6 + key + '' + fct.params + '\n' + fct.body + '\n';
+        if (key === 'ready') {
+            hasReady = true;
+            fct.body = 'super.ready();\n' + fct.body;
+            if (listenersBlock) {
+                fct.body = listenersBlock + fct.body;
+            }
+        }
+        es6 = es6 + key + '' + fct.params + '\n{' + fct.body + '}\n';
+    }
+    if (listenersBlock && !hasReady) {
+        es6 = es6 + 'ready()\n{\n' + listenersBlock + '\nsuper.ready();\n}\n';
     }
 
     es6 = es6 + '}\n\nwindow.customElements.define(' + className + '.is, ' + className + ');';
@@ -24,6 +44,9 @@ exports.convertToES6 = function (data) {
 };
 
 function getStaticMethodWithReturn(name, stringValue) {
+    if (!stringValue) {
+        return '';
+    }
     return 'static get ' + name + '() { \nreturn ' + stringValue + ';\n}\n'
 }
 
@@ -62,7 +85,7 @@ function getClassName(config) {
 function convertFunction(functionString) {
     let indexOfSignature = functionString.indexOf('(');
     let params = functionString.substring(indexOfSignature, indexOfSignature + functionString.substring(indexOfSignature).indexOf(')')) + ')';
-    let body = functionString.substring(functionString.indexOf('{'), functionString.lastIndexOf('}')) + '}';
+    let body = functionString.substring(functionString.indexOf('{') + 1, functionString.lastIndexOf('}'));
     return {
         params: params,
         body: body
