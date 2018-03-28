@@ -5,9 +5,10 @@ usage:
 `node index.js <file_name>`
 
 opts:
-    -w: write back to file
-    -l: use lebab with safe operations
-    -lu: use lebab with safe operations **AND UNSAFE OPERATIONS**
+
+    * w: write back to file 
+    * l: use lebab with safe operations
+    * lu: use lebab with safe operations **AND UNSAFE OPERATIONS**
 
 lebab: https://github.com/lebab/lebab
 
