@@ -12,6 +12,7 @@ let writeFile = false;
 let useLebab = false;
 let useLebabUnsafe = false;
 let returnUnshpe = false;
+let printToConsole = false;
 for (let i = 1; i < process.argv.length; i++) {
     let arg = process.argv[i];
     switch (arg) {
@@ -27,12 +28,15 @@ for (let i = 1; i < process.argv.length; i++) {
         case '-11':
             returnUnshpe = true;
             break;
+        case '-p':
+            printToConsole = true;
+            break;
         default:
             fileName = arg;
     }
 }
 let polymerConfigs = configExtractor.extractJsonConfigFromPath(fileName);
-if(returnUnshpe) {
+if (returnUnshpe) {
     return 11;
 }
 for (let i = 0; i < polymerConfigs.length; i++) {
@@ -40,15 +44,20 @@ for (let i = 0; i < polymerConfigs.length; i++) {
     console.log('running convertor for ', polymerConfig.path, ' with write file:', writeFile, 'use lebab: ', useLebab, 'use lebab unsafe: ', useLebabUnsafe);
     let es6class = es6Converter.convertToES6(polymerConfig);
     let safeLebab = ['arrow', 'for-of', 'for-each', 'arg-rest', 'arg-spread', 'obj-method', 'obj-shorthand', 'exponent', 'multi-var'];
-    if (useLebab) {
-        es6class = lebab.transform(es6class, safeLebab).code;
-    }
-    if (useLebabUnsafe) {
-        es6class = lebab.transform(es6class, safeLebab.concat(['let'])).code;
+    try {
+        if (useLebab) {
+            es6class = lebab.transform(es6class, safeLebab).code;
+        }
+        if (useLebabUnsafe) {
+            es6class = lebab.transform(es6class, safeLebab.concat(['let'])).code;
+        }
+    } catch (e) {
+        console.log('ERROR lebabbing', polymerConfig.path);
     }
     if (writeFile) {
         configWriter.writeES6Class(polymerConfig.path, polymerConfig.start, polymerConfig.end, es6class);
-    } else {
+    }
+    if (printToConsole) {
         log(polymerConfig.path);
         console.log(es6class);
         log(starify(polymerConfig.path));
